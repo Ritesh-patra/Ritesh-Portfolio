@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import confetti from "canvas-confetti";
-import emailjs from "@emailjs/browser";
 
 type FormValues = {
   name: string;
@@ -29,26 +28,53 @@ export const ContactForm = () => {
   // Submit handler using backend API (/api/contact) with timeout and robust error handling
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     setErrorMessage(null);
+    console.log("Contact form submit to backend:", { data, backendUrl });
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10s
 
     try {
-      await emailjs.send(
-        import.meta.env.VITE_EMAIL_SERVICE,
-        import.meta.env.VITE_EMAIL_TEMPLATE,     // template id
-        {
-          name: data.name,
-          email: data.email,
-          message: data.message,
-        },
-        import.meta.env.VITE_EMAIL_PUBLIC_KEY       // public key
-      );
+      const res = await fetch(`${backendUrl}/api/contact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        signal: controller.signal,
+      });
 
-      setIsSuccess(true);
-      reset();
-      confetti({ spread: 70, particleCount: 100 });
+      clearTimeout(timeout);
 
+      const contentType = res.headers.get("content-type") || "";
+      let body: any = null;
+      try {
+        if (contentType.includes("application/json")) body = await res.json();
+        else body = await res.text();
+      } catch (parseErr) {
+        console.warn("Failed to parse response body", parseErr);
+        body = null;
+      }
+
+      console.log("Contact form response:", { status: res.status, body });
+
+      if (res.ok) {
+        setIsSuccess(true);
+        reset();
+        confetti({ spread: 70, particleCount: 100 });
+        console.log("Message sent: success response from backend");
+        return;
+      }
+
+      const msg = (body && (body.error || body.message)) || body || `Request failed with status ${res.status}`;
+      console.error("Send error:", msg);
+      setErrorMessage(typeof msg === "string" ? msg : JSON.stringify(msg));
     } catch (err: any) {
-      console.error(err);
-      setErrorMessage("Failed to send message"); 
+      clearTimeout(timeout);
+      if (err?.name === "AbortError") {
+        console.error("Request timed out after 10s", err);
+        setErrorMessage("Request timed out. Please try again.");
+      } else {
+        console.error("Network error while sending contact form:", err);
+        setErrorMessage(err?.message || "Network error");
+      }
     }
   };
 
