@@ -10,7 +10,7 @@ const projects = [
     year: "2023",
     video: "./obys.mp4",
     description: "A creative agency website clone featuring advanced animations, smooth scrolling, and interactive elements. The project recreates a modern design-focused website using HTML, CSS, JavaScript, and animation libraries like GSAP for a highly engaging user experience.",
-    link: "https://banditadas.github.io/Obys-Agency/",
+    link: "https://ritesh-patra.github.io/Obys-Agency/",
   },
   {
     title: "Exo-Ape",
@@ -19,7 +19,7 @@ const projects = [
     video: "./exoape.mp4",
     description:
       "A visually rich website inspired by modern creative agency designs. It showcases bold typography, smooth scrolling interactions, and immersive animations to create a dynamic and engaging frontend experience.",
-    link: "https://exo-ape-j778.vercel.app/",
+    link: "https://expo-ape-rust.vercel.app/",
   },
   {
     title: "Work",
@@ -28,7 +28,7 @@ const projects = [
     video: "./work.mp4",
     description:
       "A modern web experience built with smooth animations and interactive UI elements. The project focuses on creating an engaging user interface with fluid transitions, responsive design, and visually appealing layouts to deliver a polished browsing experience.",
-    link: "https://work-ruby-three.vercel.app/",
+    link: "https://ritesh-patra.github.io/Refocus/",
   },
 ];
 

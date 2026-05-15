@@ -16,27 +16,7 @@ const certificates = [
     year: "2023",
     image: "./certificates/frontend domination.png",
   },
-  {
-    id: 2,
-    title: "Reimagine Hackathon",
-    issuer: "Sheryians Coding School",
-    year: "2024",
-    image: "./certificates/frontend hackathon.png",
-  },
-  {
-    id: 3,
-    title: "Introduction To ML",
-    issuer: "NPTEL",
-    year: "2025",
-    image: "./certificates/NPTEL ss.png",
-  },
-  {
-    id: 4,
-    title: "Workplace Fundamentals",
-    issuer: "British Council",
-    year: "2024",
-    image: "./certificates/british council.png",
-  },
+
 ];
 
 // export const Certificates: React.FC = () => {

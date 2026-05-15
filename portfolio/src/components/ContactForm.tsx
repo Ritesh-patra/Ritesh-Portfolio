@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import confetti from "canvas-confetti";
+import emailjs from "@emailjs/browser";
 
 type FormValues = {
   name: string;
@@ -22,59 +23,53 @@ export const ContactForm = () => {
     reValidateMode: "onChange",
   });
 
-  // Prefer explicit Vite env var, otherwise fall back to backend port from .env (4000)
-  const backendUrl = ((import.meta as any).env && (import.meta as any).env.VITE_BACKEND_URL) || "http://localhost:4000";
+  const serviceId = (import.meta as any).env?.VITE_EMAIL_SERVICE;
+  const templateId = (import.meta as any).env?.VITE_EMAIL_TEMPLATE;
+  const publicKey = (import.meta as any).env?.VITE_EMAIL_PUBLIC_KEY;
 
-  // Submit handler using backend API (/api/contact) with timeout and robust error handling
+
+
+  useEffect(() => {
+    if (publicKey) {
+      try {
+        // initialize EmailJS with the public key (user id)
+        // emailjs.init is idempotent
+        emailjs.init(publicKey);
+      } catch (e) {
+        console.warn("emailjs.init failed:", e);
+      }
+    }
+  }, [publicKey]);
+
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     setErrorMessage(null);
-    console.log("Contact form submit to backend:", { data, backendUrl });
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10s
+    if (!serviceId || !templateId || !publicKey) {
+      setErrorMessage("Email service not configured. Check .env values.");
+      return;
+    }
 
     try {
-      const res = await fetch(`${backendUrl}/api/contact`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        signal: controller.signal,
+      const response = await emailjs.send(serviceId, templateId, {
+        name: data.name,
+        email: data.email,
+        message: data.message,
       });
 
-      clearTimeout(timeout);
+    //   console.log("EmailJS response:", response);
 
-      const contentType = res.headers.get("content-type") || "";
-      let body: any = null;
-      try {
-        if (contentType.includes("application/json")) body = await res.json();
-        else body = await res.text();
-      } catch (parseErr) {
-        console.warn("Failed to parse response body", parseErr);
-        body = null;
-      }
+      const ok =
+        response && (response.status === 200 || response.text === "OK");
+      if (!ok) throw response || new Error("EmailJS send failed");
 
-      console.log("Contact form response:", { status: res.status, body });
-
-      if (res.ok) {
-        setIsSuccess(true);
-        reset();
-        confetti({ spread: 70, particleCount: 100 });
-        console.log("Message sent: success response from backend");
-        return;
-      }
-
-      const msg = (body && (body.error || body.message)) || body || `Request failed with status ${res.status}`;
-      console.error("Send error:", msg);
-      setErrorMessage(typeof msg === "string" ? msg : JSON.stringify(msg));
+      setIsSuccess(true);
+      reset();
+      confetti({ spread: 70, particleCount: 100 });
     } catch (err: any) {
-      clearTimeout(timeout);
-      if (err?.name === "AbortError") {
-        console.error("Request timed out after 10s", err);
-        setErrorMessage("Request timed out. Please try again.");
-      } else {
-        console.error("Network error while sending contact form:", err);
-        setErrorMessage(err?.message || "Network error");
-      }
+      console.error("EmailJS ERROR:", err);
+      const friendly =
+        err?.text || err?.statusText || err?.message || JSON.stringify(err);
+      setErrorMessage(`Failed to send message: ${friendly}`);
     }
   };
 
@@ -82,15 +77,14 @@ export const ContactForm = () => {
     <div className="w-full lg:w-100 min-[2000px]:w-[35vw] ">
       <form
         id="contact-form"
-        onSubmit={(e) => {
-          console.log("native submit event", e);
-          return handleSubmit(onSubmit)(e as any);
-        }}
+        onSubmit={(e) => handleSubmit(onSubmit)(e as any)}
         className="space-y-4 md:space-y-2 min-[2000px]:space-y-[2vh]"
       >
         {/* Name */}
         <div className="space-y-1.5 min-[2000px]:space-y-[1vh]">
-          <label className="text-xs min-[2000px]:text-[0.8vw] font-medium text-gray-400 px-1 min-[2000px]:px-[0.5vw]">Name</label>
+          <label className="text-xs min-[2000px]:text-[0.8vw] font-medium text-gray-400 px-1 min-[2000px]:px-[0.5vw]">
+            Name
+          </label>
 
           <input
             type="text"
@@ -163,17 +157,20 @@ export const ContactForm = () => {
 
         <button
           type="submit"
-          onClick={(e) => console.log("submit button clicked", e)}
           disabled={isSubmitting || isSuccess}
           className={`w-full font-semibold rounded-xl min-[2000px]:rounded-[0.8vw] px-4 py-3 min-[2000px]:px-[2vw] min-[2000px]:py-[1.5vh] transition-all duration-300 text-sm min-[2000px]:text-[1vw] ${
             isSubmitting
               ? "bg-black text-white dark:bg-white dark:text-black opacity-50 cursor-not-allowed"
               : isSuccess
-              ? "bg-emerald-500 text-white cursor-default"
-              : "bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 hover:scale-[1.02] active:scale-[0.98]"
+                ? "bg-emerald-500 text-white cursor-default"
+                : "bg-black text-white dark:bg-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 hover:scale-[1.02] active:scale-[0.98]"
           }`}
         >
-          {isSubmitting ? "Sending..." : isSuccess ? "Message Sent! ✨" : "Send Message"}
+          {isSubmitting
+            ? "Sending..."
+            : isSuccess
+              ? "Message Sent! ✨"
+              : "Send Message"}
         </button>
 
         {errorMessage && (
