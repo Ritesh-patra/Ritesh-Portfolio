@@ -16,6 +16,21 @@ const certificates = [
     year: "2023",
     image: "./certificates/frontend domination.png",
   },
+   {
+  id: 2,
+  title: "Website Development Internship",
+  issuer: "Spider Innovative Technologies",
+  year: "2025 - 2026",
+  image: "./certificates/internship.png",
+},
+
+{
+  id: 3,
+  title: "Letter of Recommendation",
+  issuer: "Spider Innovative Technologies",
+  year: "2026",
+  image: "./certificates/Recommendation_Ritesh.png",
+},
 
 ];
 
